@@ -43,8 +43,13 @@ class BoxPlotStyle:
         'linewidth': 2
     }
 
+
+##############################################################################
+# MyPlot Class
+##############################################################################
+
 class MyPlot():
-    """ A list of methods to plot beautiful plots with matplotlib.pyplot. """
+    """ A list of methods to compute and plot beautiful plots with matplotlib.pyplot. """
     
     def new_plot(width=8, heigth=5, subplot=111):
         """ Return a new empty axe. """
