@@ -9,9 +9,13 @@ import numpy as np
 
 from IPython.display import display
 
-# Boxplot style
+##############################################################################
+# Boxplot Styles Class
+##############################################################################
+
 class BoxPlotStyle:
-        
+    """ Just a class with some boxplot properties """
+
     medianprops = {
         'color': '#fcc500',
         'linewidth': 2
@@ -357,6 +361,11 @@ class MyPlot():
         # Set background
         MyPlot.bg(ax)
 
+
+##############################################################################
+# Univa Class
+##############################################################################
+
 class Univa():
     """ A class to realize univariate anlysis. """
     
@@ -595,6 +604,11 @@ class Univa():
             self.lorenz_compute(ax)
         
         MyPlots.plot_show()
+
+
+##############################################################################
+# Biva Class
+##############################################################################
 
 class Biva():
     """ A class to compute and plot bivariate analysis. """
