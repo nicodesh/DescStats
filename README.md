@@ -3,7 +3,7 @@ A Python module to realize Descriptive Statistics: Univariate Analysis and Bivar
 
 ## Examples
 
-The best examples are here: https://github.com/nicodesh/rester-livre/blob/master/rester-livre.ipynb
+The best usage examples are here: https://github.com/nicodesh/rester-livre/blob/master/rester-livre.ipynb
 
 ## Description
 There are just three classes:
