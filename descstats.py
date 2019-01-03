@@ -397,7 +397,12 @@ class Univa():
     ####################
     
     def __init__(self, variable, quali=False, discrete=False, unit='', filter_var=[]):
-        """ The class constructor. Just the variable is mandatory. """
+        """ The class constructor. Just the variable is mandatory.
+        
+        Args:
+            variable (Pandas Series): The variable that you want to analyze. 
+
+        """
         
         self.variable = variable
         self.quali = quali
@@ -644,7 +649,16 @@ class Biva():
     ####################
     
     def __init__(self, x, y, type_x='quanti', type_y='quanti', x_class_size=50):
-        """ Init instance. """
+        """ Init the Biva() instance.
+        
+        Args:
+            x (Pandas Series): the first variable
+            y (Pandas Series): the second variable
+            type_x (str): 'quanti' or 'quali'
+            type_y (str): 'quanti' or 'quali'
+            x_class_size (int): if x is quanti but needed to be discretized
+
+        """
         
         self.x = x
         self.y = y
