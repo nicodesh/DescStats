@@ -1,7 +1,12 @@
 # DescStats
 A Python module to realize Descriptive Statistics: Univariate Analysis and Bivariate Analysis
 
-There are three classes:
+## Examples
+
+The best examples are here: https://github.com/nicodesh/rester-livre/blob/master/rester-livre.ipynb
+
+## Description
+There are just three classes:
 
 ## BotPlotStyle:
 It's just a class with some properties for pyplot boxplots.
