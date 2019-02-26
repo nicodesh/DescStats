@@ -7,6 +7,13 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 
+from matplotlib.collections import LineCollection
+from scipy.cluster.hierarchy import linkage, fcluster, dendrogram
+
+from sklearn import decomposition
+from sklearn import preprocessing
+from sklearn.cluster import KMeans
+
 from IPython.display import display
 
 ##############################################################################
@@ -51,11 +58,19 @@ class BoxPlotStyle:
 class MyPlot():
     """ A list of methods to compute and plot beautiful plots with matplotlib.pyplot. """
     
-    def new_plot(width=8, heigth=5, subplot=111):
-        """ Return a new empty axe. """
-        fig = plt.figure(figsize=[width, heigth])
-        ax = plt.subplot(subplot)
-        return fig, ax
+    def new_plot(width=8, heigth=5, plots=1):
+        """ Return one or two empty axe(s). """
+
+        fig = plt.subplots(figsize=[width, heigth])
+
+        if (plots == 1):
+            ax = plt.subplot(111)
+            return fig, ax
+
+        elif (plots == 2):
+            ax1 = plt.subplot(121)
+            ax2 = plt.subplot(122)
+            return fig, ax1, ax2
     
     def plot_show():
         """ Plot the plots. """
@@ -366,6 +381,347 @@ class MyPlot():
         # Set background
         MyPlot.bg(ax)
 
+    def pca_screeplot(ax, pca):
+        """ Plot a scree plot of eigenvalues from a sklearn PCA object. """
+
+        scree = pca.explained_variance_ratio_*100
+        ax.bar(np.arange(len(scree))+1, scree, zorder=2)
+        ax.plot(
+                np.arange(len(scree))+1,
+                scree.cumsum(),
+                c="#FFB246",
+                marker='o',
+                markersize=12
+                )
+
+        # Set background
+        MyPlot.bg(ax)
+
+        # Set borders
+        MyPlot.border(ax)
+
+        # Set labels
+        MyPlot.labels(ax, "Axes of inertia", "Percentage of inertia")
+
+        # Set title
+        MyPlot.title(ax, "Scree Plot of Eigenvalues")
+
+        # Set background
+        MyPlot.bg(ax)
+
+    def pca_circle(fig, ax, pca, components, labels=None, label_rotation=0, lims=None):
+        """ Plot the correlation circle from a sklearn PCA obejct. """
+
+        d1 = components[0] - 1
+        d2 = components[1] - 1
+        pcs = pca.components_
+
+        # détermination des limites du graphique
+        if lims is not None :
+            xmin, xmax, ymin, ymax = lims
+        elif pcs.shape[1] < 30 :
+            xmin, xmax, ymin, ymax = -1, 1, -1, 1
+        else :
+            xmin, xmax, ymin, ymax = min(pcs[d1,:]), max(pcs[d1,:]), min(pcs[d2,:]), max(pcs[d2,:])
+
+        # affichage des flèches
+        # s'il y a plus de 30 flèches, on n'affiche pas le triangle à leur extrémité
+        if pcs.shape[1] < 30 :
+            plt.quiver(np.zeros(pcs.shape[1]), np.zeros(pcs.shape[1]),
+               pcs[d1,:], pcs[d2,:], 
+               angles='xy', scale_units='xy', scale=1, color="#FFB246")
+
+        else:
+            lines = [[[0,0],[x,y]] for x,y in pcs[[d1,d2]].T]
+            ax.add_collection(LineCollection(lines, axes=ax, alpha=.1, color='#FFB246'))
+        
+        # affichage des noms des variables  
+        if labels is not None:  
+            for i,(x, y) in enumerate(pcs[[d1,d2]].T):
+                if x >= xmin and x <= xmax and y >= ymin and y <= ymax :
+                    plt.text(x, y, labels[i], fontsize='14', ha='center', va='center', rotation=label_rotation, color="#3977af", alpha=0.5)
+    
+        # affichage du cercle
+        circle = plt.Circle((0,0), 1, facecolor='none', edgecolor='#3977af', zorder=3)
+
+        plt.gca().add_artist(circle)
+
+        # définition des limites du graphique
+        plt.xlim(xmin, xmax)
+        plt.ylim(ymin, ymax)
+
+        # affichage des lignes horizontales et verticales
+        plt.plot([-1, 1], [0, 0], color='#c6c1d8', ls='--')
+        plt.plot([0, 0], [-1, 1], color='#c6c1d8', ls='--')
+
+        # nom des axes, avec le pourcentage d'inertie expliqué
+        xlabel = f"F{d1+1} ({pca.explained_variance_ratio_[d1]:.0%})"
+        ylabel = f"F{d2+1} ({pca.explained_variance_ratio_[d2]:.0%})"
+
+        # Set labels
+        MyPlot.labels(ax, xlabel, ylabel)
+
+        # Set title
+        MyPlot.title(ax, f"Correlation Circle on F{d1+1} and F{d2+1}")
+
+        # Set border
+        MyPlot.border(ax)
+
+    def pca_factorial_plane(fig, ax, X_projected, pca, components, labels=None, alpha=1, clusters=None, lims=None, **kwargs):
+        """ Plot a scatterplot from data projected on the choosen factorial plane. """
+
+        d1 = components[0] - 1
+        d2 = components[1] - 1
+
+        # Markersize
+        if ('markersize' in kwargs):
+            markersize = kwargs['markersize']
+        else:
+            markersize = 50
+    
+        # Scatterplot
+        if clusters is not None:
+            clusters = np.array(clusters)
+            for value in np.unique(clusters):
+                selected = np.where(clusters == value)
+                plt.scatter(
+                            X_projected[selected, d1],
+                            X_projected[selected, d2],
+                            alpha=alpha,
+                            label=value,
+                            s=markersize
+                            )
+            plt.legend()
+
+        else:
+            plt.scatter(
+                        X_projected[:, d1],
+                        X_projected[:, d2],
+                        alpha=alpha,
+                        s=markersize
+                        )
+
+
+
+        # Labels
+        if labels is not None:
+            for i,(x,y) in enumerate(X_projected[:,[d1,d2]]):
+                plt.text(x, y, labels[i],
+                          fontsize='14', ha='center',va='center') 
+            
+        # Plot limits
+        if lims == None:
+            boundary = np.max(np.abs(X_projected[:, [d1,d2]])) * 1.1
+            plt.xlim([-boundary,boundary])
+            plt.ylim([-boundary,boundary])
+
+        else:
+            plt.xlim([lims[0], lims[1]])
+            plt.ylim([lims[2], lims[3]])
+    
+        # Vertical and horizontal lines
+        plt.plot([-100, 100], [0, 0], color='#c6c1d8', ls='--')
+        plt.plot([0, 0], [-100, 100], color='#c6c1d8', ls='--')
+
+        # Axis name with percentage explained by the component.
+        xlabel = f"F{d1+1} ({pca.explained_variance_ratio_[d1]:.0%})"
+        ylabel = f"F{d2+1} ({pca.explained_variance_ratio_[d2]:.0%})"
+
+        # Set labels
+        MyPlot.labels(ax, xlabel, ylabel)
+
+        # Set title
+        MyPlot.title(ax, f"Projection on F{d1+1} and F{d2+1}")
+
+        # Set border
+        MyPlot.border(ax)
+
+    def dendrogram(Z, names, figsize=(10,25), save_image=False):
+        """ Plot a dendogram from hierarchical linked data, from sklearn. """
+
+        fig = plt.figure(figsize=figsize)
+        ax = plt.subplot()
+        dendrogram(
+            Z,
+            labels = names,
+            orientation = "left",
+        )
+        MyPlot.title(ax, "Hierarchical Clustering Dendrogram")
+        MyPlot.labels(ax, "Distance", '')
+
+        if save_image:
+            fig.savefig(save_image + '.png')
+            
+        MyPlot.plot_show()
+
+##############################################################################
+# Hierarchical Linked Class
+##############################################################################
+
+class MyHier():
+    """ A class to compute and plot Hiearchical Linked Data. """
+
+    def __init__(self, data):
+        """ Class constructor.
+        Args:
+            data (Pandas DataFrame): the data used to compute the dendrogram.
+        """
+
+        # Save data
+        self.data = data.copy()
+        self.X = self.data.values
+        self.names = self.data.index
+
+        # Scale data
+        self.X_scaled = preprocessing.StandardScaler().fit_transform(self.X)
+
+        # Compute the hierarchical clustering with the ward method.
+        self.Z = linkage(self.X_scaled, 'ward')
+
+    def dendrogram(self, **kwargs):
+        """ Plot the Dendrogram. """
+        MyPlot.dendrogram(self.Z, self.names, **kwargs)
+
+    def clusters(self, nb_cluster):
+        """ Save and return the clusters. """
+        
+        # Save the clusters
+        self.clusters = fcluster(self.Z, nb_cluster, criterion='maxclust')
+
+        # Compute and save the centroïds
+        centroids_scaled = np.ndarray(shape=(0, self.X.shape[1]))
+        centroids_raw = np.ndarray(shape=(0, self.X.shape[1]))
+        centroids_names = np.array([]).astype(int)
+
+        for cluster in np.unique(self.clusters):
+            new_row_raw = self.X[np.where(self.clusters == cluster)].mean(axis=0)
+            new_row_scaled = self.X_scaled[np.where(self.clusters == cluster)].mean(axis=0)
+
+            centroids_raw = np.vstack((centroids_raw, new_row_raw))
+            centroids_scaled = np.vstack((centroids_scaled, new_row_scaled))
+            centroids_names = np.append(centroids_names, cluster)
+
+        self.centroids_raw = centroids_raw
+        self.centroids_scaled = centroids_scaled
+        self.centroids_names = centroids_names
+
+        return self.clusters
+
+    def centroids(self, scaled=True):
+        """ Returns the centroids. Either scaled or not scaled. """
+
+        if scaled:
+            return self.centroids_scaled
+
+        else:
+            return self.centroids_raw
+
+##############################################################################
+# PCA Class
+##############################################################################
+
+class MyPCA():
+    """ A class to realize PCA from a dataframe. """
+
+    def __init__(self, data, n_components, clusters=None, centroids=None, centroids_names=None):
+        """ The class constructor.
+
+        Args:
+            data (Pandas Dataframe): A dataframe with only quantitative datas.
+            components (Int): Number of principal components to compute.
+
+        """
+
+        # Assign the values
+        self.data = data.copy()
+        self.X = self.data.values
+        self.names = self.data.index
+        self.features = self.data.columns
+        self.n_components = n_components
+        self.clusters = clusters
+        self.centroids = centroids
+        self.centroids_names = centroids_names
+
+        # Scale the data
+        self.X_scaled = preprocessing.StandardScaler().fit_transform(self.X)
+
+        # Compute PCA
+        self.pca = decomposition.PCA(n_components = self.n_components)
+        self.pca.fit(self.X_scaled)
+        self.X_projected = self.pca.transform(self.X_scaled)
+
+        # If there are centroids
+        if centroids is not None:
+            self.centroids_projected = self.pca.transform(self.centroids)
+
+    def scatter(self, d1, d2, fig=None, plot=111, figsize=(10,10), **kwargs):
+        """ Points projected on factorial plan """
+
+        if ('data_projected' in kwargs) and (kwargs['data_projected'] == 'centroids'):
+            data_projected = self.centroids_projected
+
+            if self.centroids_names is not None:
+                clusters = self.centroids_names
+
+            else:
+                clusters = None
+
+        else:
+            data_projected = self.X_projected
+            clusters = self.clusters
+
+        if fig == None:
+            fig = plt.subplots(figsize=figsize)
+
+        if ('labels' in kwargs) and (kwargs['labels']):
+            kwargs['labels'] = self.names
+
+        ax = plt.subplot(plot)
+        MyPlot.pca_factorial_plane(
+                                    fig,
+                                    ax,
+                                    data_projected,
+                                    self.pca,
+                                    (d1, d2),
+                                    clusters=clusters,
+                                    **kwargs
+                                    )
+
+        if fig == None:
+            MyPlot.plot_show()
+
+    def circle(self, d1, d2, fig=None, plot=111, figsize=(10,10), **kwargs):
+        """ Corralations Circle projected on factorial plan """
+
+        if fig == None:
+            fig = plt.subplots(figsize=figsize)
+
+        labels = None
+        if ('labels' in kwargs) and (kwargs['labels']):
+            labels = self.features
+
+        ax = plt.subplot(plot)
+        MyPlot.pca_circle(fig, ax, self.pca, (d1, d2), labels=labels)
+
+        if fig == None:
+            MyPlot.plot_show()
+
+    def scree(self):
+        """ Plot the scree plot of eigenvalues. """
+
+        fig, ax = MyPlot.new_plot()
+        MyPlot.pca_screeplot(ax, self.pca)
+        MyPlot.plot_show()
+
+    def scattercircle(self, d1, d2, labelscatter=None, labelcircle=None, limscatter=None, limcircle=None, **kwargs):
+        """ Plot the scatterplot and the correlations circle,
+        projected on the factorial plan for the d1 and d2
+        specified dimensions. """
+
+        fig = plt.subplots(figsize=(16,7.3))
+        self.scatter(d1, d2, fig=fig, plot=121, lims=limscatter, labels=labelscatter, **kwargs)
+        self.circle(d1, d2, fig=fig, plot=122, lims=limcircle, labels=labelcircle, **kwargs)
+        MyPlot.plot_show()
 
 ##############################################################################
 # Univa Class
@@ -424,7 +780,7 @@ class Univa():
                 text = kwargs['annotate']['text']
                 xy = kwargs['annotate']['xy']
                 xytext = kwargs['annotate']['xytext']
-                MyPlots.annotate(ax, text, xy=xy, xytext=xytext)
+                MyPlot.annotate(ax, text, xy=xy, xytext=xytext)
         
     def set_filter(self, condition):
         """ Set a filter based on a value that we can
@@ -511,8 +867,8 @@ class Univa():
         plot_name = self.filter_name   
         
         if self.discrete or self.quali:
-            MyPlots.bar(ax, data, step)
-            MyPlots.title(ax, f"{plot_name} - Bar Chart")
+            MyPlot.bar(ax, data, step)
+            MyPlot.title(ax, f"{plot_name} - Bar Chart")
             
             if (len(self.variable.drop_duplicates()) > 5):
                 plt.xticks(rotation=45)
@@ -521,8 +877,8 @@ class Univa():
             if not bins: # Sturges Rule
                 bins = round(1 + math.log(len(data), 2))
                 
-            MyPlots.hist(ax, data, bins)
-            MyPlots.title(ax, f"{plot_name} - Histogram (bins = {bins})")
+            MyPlot.hist(ax, data, bins)
+            MyPlot.title(ax, f"{plot_name} - Histogram (bins = {bins})")
             
         self.check_annotation(ax, **kwargs)
             
@@ -531,15 +887,15 @@ class Univa():
             
         if len(self.filter_var) > 0:
             for condition in self.cond_list:
-                fig, ax = MyPlots.new_plot()
+                fig, ax = MyPlot.new_plot()
                 self.set_filter(condition)
                 self.distribution_compute(ax, step, bins, **kwargs)
                 
         else:
-            fig, ax = MyPlots.new_plot()
+            fig, ax = MyPlot.new_plot()
             self.distribution_compute(ax, step, bins, **kwargs)
         
-        MyPlots.plot_show()
+        MyPlot.plot_show()
         
     def piechart_compute(self, ax):
         """ Compute a Pie Chart distribution. """
@@ -547,9 +903,9 @@ class Univa():
         desc_var = self.filtered_data
         plot_name = self.filter_name
         
-        MyPlots.piechart(ax, desc_var, var_name=plot_name, unit=self.unit)
-        MyPlots.title(ax, f"{plot_name} - Pie Chart Distribution")
-        MyPlots.border(ax)
+        MyPlot.piechart(ax, desc_var, var_name=plot_name, unit=self.unit)
+        MyPlot.title(ax, f"{plot_name} - Pie Chart Distribution")
+        MyPlot.border(ax)
         
     def piechart(self):
         """ Plot a Pie Chart distribution. """
@@ -557,14 +913,14 @@ class Univa():
         if len(self.filter_var) > 0:
             for condition in self.cond_list:
                 self.set_filter(condition)
-                fig, ax = MyPlots.new_plot()
+                fig, ax = MyPlot.new_plot()
                 self.piechart_compute(ax)
                 
         else:
-            fig, ax = MyPlots.new_plot()
+            fig, ax = MyPlot.new_plot()
             self.piechart_compute(ax)
             
-        MyPlots.plot_show()
+        MyPlot.plot_show()
         
     def boxplot_compute(self, ax):
         """ Compute a boxplot. """
@@ -572,8 +928,8 @@ class Univa():
         if not self.quali:
             data = self.filtered_data
             plot_name = self.filter_name   
-            MyPlots.boxplot(ax, data)
-            MyPlots.title(ax, f"{plot_name} - Boxplot (without outliers)")
+            MyPlot.boxplot(ax, data)
+            MyPlot.title(ax, f"{plot_name} - Boxplot (without outliers)")
             
     def boxplot(self):
         """ Plot a boxplot. """
@@ -581,14 +937,14 @@ class Univa():
         if len(self.filter_var) > 0:
             for condition in self.cond_list:
                 self.set_filter(condition)
-                fig, ax = MyPlots.new_plot()
+                fig, ax = MyPlot.new_plot()
                 self.boxplot_compute(ax)
                 
         else:
-            fig, ax = MyPlots.new_plot()
+            fig, ax = MyPlot.new_plot()
             self.boxplot_compute(ax)
             
-        MyPlots.plot_show()
+        MyPlot.plot_show()
         
     def lorenz_compute(self, ax):
         """ Compute a Lorenz Curve. """
@@ -597,9 +953,9 @@ class Univa():
             data = self.filtered_data
             plot_name = self.filter_name           
 
-            MyPlots.lorenz(ax, data)
+            MyPlot.lorenz(ax, data)
             gini_var = round(Univa.gini(data),2)
-            MyPlots.title(ax, f"Lorenz Curve - {plot_name} (Gini: {gini_var})")
+            MyPlot.title(ax, f"Lorenz Curve - {plot_name} (Gini: {gini_var})")
             
     def lorenz(self):
         """ PLot a Lorenz Curve. """
@@ -607,13 +963,13 @@ class Univa():
         if len(self.filter_var) > 0:
             for condition in self.cond_list:
                 self.set_filter(condition)
-                fig, ax = MyPlots.new_plot()
+                fig, ax = MyPlot.new_plot()
                 self.lorenz_compute(ax)
         else:         
-            fig, ax = MyPlots.new_plot()
+            fig, ax = MyPlot.new_plot()
             self.lorenz_compute(ax)
         
-        MyPlots.plot_show()
+        MyPlot.plot_show()
 
 
 ##############################################################################
@@ -695,40 +1051,40 @@ class Biva():
         """ Plot a scatter plot + a linear regression. """
 
         if (self.type_x == 'quanti') and (self.type_y == 'quanti'):
-            fig, ax = MyPlots.new_plot(**kwargs)
-            MyPlots.scatter(ax, self.x, self.y)
-            MyPlots.bg(ax)
-            MyPlots.title(ax, f'Scatter Plot: [{self.x.name}] vs [{self.y.name}]')
-            MyPlots.border(ax)
+            fig, ax = MyPlot.new_plot(**kwargs)
+            MyPlot.scatter(ax, self.x, self.y)
+            MyPlot.bg(ax)
+            MyPlot.title(ax, f'Scatter Plot: [{self.x.name}] vs [{self.y.name}]')
+            MyPlot.border(ax)
         
             if linreg:
-                MyPlots.lin_reg(ax, self.x, self.y)
+                MyPlot.lin_reg(ax, self.x, self.y)
             
-        MyPlots.plot_show()
+        MyPlot.plot_show()
             
     def boxplots(self, **kwargs):
         """ Plot boxplots for a quanti-quanti analysis. """
         
         if (self.type_x == 'quanti') and (self.type_y == 'quanti'):
-            fig, ax = MyPlots.new_plot(**kwargs)
-            MyPlots.boxplots(ax, self.x, self.y, class_size=self.x_class_size)
-            MyPlots.bg(ax)
-            MyPlots.border(ax)
-            MyPlots.title(ax, f"[{self.y.name}] boxplots by [{self.x.name}] class")
+            fig, ax = MyPlot.new_plot(**kwargs)
+            MyPlot.boxplots(ax, self.x, self.y, class_size=self.x_class_size)
+            MyPlot.bg(ax)
+            MyPlot.border(ax)
+            MyPlot.title(ax, f"[{self.y.name}] boxplots by [{self.x.name}] class")
             
-            MyPlots.plot_show()
+            MyPlot.plot_show()
             
     def anova(self, **kwargs):
         """ Compute and plot an ANOVA analysis. """
         
         if (self.type_x == 'quali') and (self.type_y == 'quanti'):
-            fig, ax = MyPlots.new_plot(**kwargs)
-            MyPlots.anova(ax, self.x, self.y)
-            MyPlots.bg(ax)
-            MyPlots.title(ax, f"Analysis of Variance (η2 = {Biva.eta_squared(self.x, self.y):.2f})")
-            MyPlots.border(ax)
-            MyPlots.labels(ax, self.y.name, self.x.name)
-            MyPlots.plot_show()
+            fig, ax = MyPlot.new_plot(**kwargs)
+            MyPlot.anova(ax, self.x, self.y)
+            MyPlot.bg(ax)
+            MyPlot.title(ax, f"Analysis of Variance (η2 = {Biva.eta_squared(self.x, self.y):.2f})")
+            MyPlot.border(ax)
+            MyPlot.labels(ax, self.y.name, self.x.name)
+            MyPlot.plot_show()
             
     def khi2(self, contin=False, heatmap=False, width=5, heigth=10):
         """ Compute a khi2 test. """
