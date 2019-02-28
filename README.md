@@ -11,7 +11,7 @@ Second exemple here: https://github.com/nicodesh/market-research-with-desc-stats
 I used PCA and hierarchical clustering to group countries based on FAO data (Found and Agriculture Organization).
 
 ## Description
-There are just three classes:
+There are five classes:
 
 ## BotPlotStyle:
 It's just a class with some properties for pyplot boxplots.
@@ -37,8 +37,8 @@ A class to realize bivariate analysis. You can realize different kind of bivaria
 
 You can plot boxplots for ANOVA, heatmap for Khi2, linear regression and boxplots for ANOVA with two quantitative variables.
 
-# MyPCA
+## MyPCA
 Compute and plot PCA analyses: scatter plot, correlation circle and so on.
 
-# MyHier
+## MyHier
 Compute and plot hierarchical clustering, dendrogram, centroïds.
