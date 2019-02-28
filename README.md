@@ -3,8 +3,12 @@ A Python module to realize Descriptive Statistics: Univariate Analysis and Bivar
 
 ## Examples
 
-The best usage examples are here: https://github.com/nicodesh/rester-livre/blob/master/rester-livre.ipynb
+First example  here: https://github.com/nicodesh/rester-livre/blob/master/rester-livre.ipynb
 Note that in the linked project, the code of the different classes is directly in the project, so it's not the up-to-date module code. But it's quite enough to understand how the module works.
+
+Second exemple here: https://github.com/nicodesh/market-research-with-desc-stats
+
+I used PCA and hierarchical clustering to group countries based on FAO data (Found and Agriculture Organization).
 
 ## Description
 There are just three classes:
@@ -32,3 +36,9 @@ A class to realize bivariate analysis. You can realize different kind of bivaria
 - Khi2 (χ²)
 
 You can plot boxplots for ANOVA, heatmap for Khi2, linear regression and boxplots for ANOVA with two quantitative variables.
+
+# MyPCA
+Compute and plot PCA analyses: scatter plot, correlation circle and so on.
+
+# MyHier
+Compute and plot hierarchical clustering, dendrogram, centroïds.
