@@ -172,7 +172,7 @@ class MyPlot():
         result = sm.OLS(Y, X).fit()
         a, b = result.params['data'], result.params['intercept']
 
-        xs = np.arange(min(x), max(x))
+        xs = np.arange(min(x), max(x), (max(x)-min(x)) / 100)
         ax.plot(xs, [a*x+b for x in xs], linewidth=4, color="#fcc500")
         ax.set_ylim(min(y), max(y))
 
@@ -662,6 +662,15 @@ class MyPCA():
 
             if self.centroids_names is not None:
                 clusters = self.centroids_names
+
+            else:
+                clusters = None
+
+        elif ('data_projected' in kwargs) and (kwargs['data_projected'] == 'custom'):
+            data_projected = self.custom_projected
+
+            if self.custom_names is not None:
+                clusters = self.custom_names
 
             else:
                 clusters = None
