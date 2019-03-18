@@ -643,7 +643,9 @@ class MyPCA():
         self.centroids_names = centroids_names
 
         # Scale the data
-        self.X_scaled = preprocessing.StandardScaler().fit_transform(self.X)
+
+        self.scale_model = preprocessing.StandardScaler().fit(self.X)
+        self.X_scaled = self.scale_model.transform(self.X)
 
         # Compute PCA
         self.pca = decomposition.PCA(n_components = self.n_components)
