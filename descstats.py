@@ -957,7 +957,7 @@ class Univa():
             
         MyPlot.plot_show()
         
-    def lorenz_compute(self, ax):
+    def lorenz_compute(self, ax, **kwargs):
         """ Compute a Lorenz Curve. """
         
         if not self.quali:
@@ -966,21 +966,37 @@ class Univa():
 
             MyPlot.lorenz(ax, data)
             gini_var = round(Univa.gini(data),2)
-            MyPlot.title(ax, f"Lorenz Curve - {plot_name} (Gini: {gini_var})")
+
+            if 'title' in kwargs:
+                MyPlot.title(ax, kwargs['title'])
+
+            else:
+                MyPlot.title(ax, f"Lorenz Curve - {plot_name} (Gini: {gini_var})")
             
-    def lorenz(self):
+    def lorenz(self, **kwargs):
         """ PLot a Lorenz Curve. """
+
+        plot = True
            
         if len(self.filter_var) > 0:
             for condition in self.cond_list:
                 self.set_filter(condition)
                 fig, ax = MyPlot.new_plot()
-                self.lorenz_compute(ax)
+                self.lorenz_compute(ax, **kwargs)
+
+        elif ('ax' in kwargs):
+            ax = kwargs['ax']
+            del kwargs['ax']
+            plot = False
+
+            self.lorenz_compute(ax, **kwargs)    
+
         else:         
-            fig, ax = MyPlot.new_plot()
-            self.lorenz_compute(ax)
+            fig, ax = MyPlot.new_plot(width=8, heigth=8)
+            self.lorenz_compute(ax, **kwargs)
         
-        MyPlot.plot_show()
+        if plot:        
+            MyPlot.plot_show()
 
 
 ##############################################################################
